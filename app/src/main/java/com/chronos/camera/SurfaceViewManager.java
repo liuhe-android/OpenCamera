@@ -6,6 +6,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 
+import com.chronos.App;
 import com.chronos.utils.LogUtils;
 
 import java.io.IOException;
@@ -22,7 +23,6 @@ public class SurfaceViewManager extends TouchFocus implements SurfaceHolder.Call
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        LogUtils.e("======surface=======");
         onBind();
     }
 
@@ -41,18 +41,18 @@ public class SurfaceViewManager extends TouchFocus implements SurfaceHolder.Call
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        // 实现自动对焦
-        if (isAuto) {
-            mCamera.autoFocus(new Camera.AutoFocusCallback() {
-                @Override
-                public void onAutoFocus(boolean success, Camera camera) {
-                    if (success) {
-                        camera.cancelAutoFocus();// 只有加上了这一句，才会自动对焦
-                        doAutoFocus();
-                    }
-                }
-            });
-        }
+//        // 实现自动对焦
+//        if (isAuto) {
+//            mCamera.autoFocus(new Camera.AutoFocusCallback() {
+//                @Override
+//                public void onAutoFocus(boolean success, Camera camera) {
+//                    if (success) {
+//                        camera.cancelAutoFocus();// 只有加上了这一句，才会自动对焦
+//                        doAutoFocus();
+//                    }
+//                }
+//            });
+//        }
     }
 
     @Override
@@ -76,6 +76,9 @@ public class SurfaceViewManager extends TouchFocus implements SurfaceHolder.Call
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         //触摸对焦
+        int width = App.getApplication().getScreenWidth();
+        int height = App.getApplication().getScreenHeight();
+        mFocusManager.setPreviewSize(width, height);
         focusOnTouch(event);
         return true;
     }
