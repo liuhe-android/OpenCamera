@@ -1,12 +1,12 @@
 package com.chronos.ui;
 
-import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 
+import com.chronos.App;
 import com.chronos.camera.CameraManager;
 
 import chronos.bizhiquan.com.camera.R;
@@ -34,6 +34,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initView() {
         btTakePic= (Button) findViewById(R.id.bt);
+        App.getApplication().setScreenWidth(getWindowManager().getDefaultDisplay().getWidth());
+        App.getApplication().setScreenHeight(getWindowManager().getDefaultDisplay().getHeight());
     }
 
 

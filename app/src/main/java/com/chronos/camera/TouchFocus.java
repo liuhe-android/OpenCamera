@@ -1,11 +1,11 @@
 package com.chronos.camera;
 
-import android.content.Context;
 import android.graphics.Rect;
-import android.graphics.RectF;
 import android.hardware.Camera;
+import android.os.Build;
 import android.view.MotionEvent;
-import android.widget.Toast;
+
+import com.chronos.App;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,168 +13,66 @@ import java.util.List;
 /**
  * Created by Liuhe on 2017/3/2.
  */
-public class TouchFocus  implements Camera.AutoFocusCallback {
+public class TouchFocus {
 
 
-        protected Camera mCamera;
+    protected Camera mCamera;
+    private Camera.Parameters mParameters;
 
-        public List<Camera.Size> getResolutionList() {
-            return  mCamera.getParameters().getSupportedPreviewSizes();
+
+    public void focusOnTouch(MotionEvent event) {
+        int x = (int) event.getX();
+        int y = (int) event.getY();
+        int screenWidth = App.getApplication().getScreenWidth();
+        int screenHeight = App.getApplication().getScreenHeight();
+        mParameters = mCamera.getParameters();
+        if (mParameters.getMaxNumMeteringAreas() > 0) {
+            List<Camera.Area> areas = new ArrayList<Camera.Area>();
+            Rect area1 = new Rect(x - 100, x - 100, x + 100, x + 100);
+            areas.add(new Camera.Area(area1, 600));
+            Rect area2 = new Rect(0, screenWidth, 0, screenHeight);
+            areas.add(new Camera.Area(area2, 400));
+            mParameters.setMeteringAreas(areas);
         }
+        mCamera.cancelAutoFocus();
+        mParameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+        mCamera.setParameters(mParameters);
+        mCamera.autoFocus(new Camera.AutoFocusCallback() {
+            @Override
+            public void onAutoFocus(boolean success, Camera camera) {
 
-        public Camera.Size getResolution() {
-            Camera.Parameters params = mCamera.getParameters();
-            Camera.Size s = params.getPreviewSize();
-            return s;
-        }
-
-//        public void setResolution(Camera.Size resolution) {
-//            disconnectCamera();
-//            connectCamera((int)resolution.width, (int)resolution.height);
-//        }
-
-        public void focusOnTouch(MotionEvent event) {
-            Rect focusRect = calculateTapArea(event.getRawX(), event.getRawY(), 1f);
-            Rect meteringRect = calculateTapArea(event.getRawX(), event.getRawY(), 1.5f);
-
-            Camera.Parameters parameters = mCamera.getParameters();
-            parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-
-            if (parameters.getMaxNumFocusAreas() > 0) {
-                List<Camera.Area> focusAreas = new ArrayList<Camera.Area>();
-                focusAreas.add(new Camera.Area(focusRect, 1000));
-
-                parameters.setFocusAreas(focusAreas);
             }
+        });
+    }
 
-            if (parameters.getMaxNumMeteringAreas() > 0) {
-                List<Camera.Area> meteringAreas = new ArrayList<Camera.Area>();
-                meteringAreas.add(new Camera.Area(meteringRect, 1000));
 
-                parameters.setMeteringAreas(meteringAreas);
+
+
+    // handle button auto focus
+    protected void doAutoFocus() {
+        mParameters = mCamera.getParameters();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            mCamera.enableShutterSound(false);
+        }
+        mParameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+        mCamera.setParameters(mParameters);
+        mCamera.autoFocus(new Camera.AutoFocusCallback() {
+            @Override
+            public void onAutoFocus(boolean success, Camera camera) {
+                if (success) {
+                    camera.cancelAutoFocus();// 只有加上了这一句，才会自动对焦。
+                    if (!Build.MODEL.equals("KORIDY H30")) {
+                        mParameters = camera.getParameters();
+                        mParameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);// 1连续对焦
+                        camera.setParameters(mParameters);
+                    } else {
+                        mParameters = camera.getParameters();
+                        mParameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+                        camera.setParameters(mParameters);
+                    }
+                }
             }
-
-            mCamera.setParameters(parameters);
-            mCamera.autoFocus(this);
-        }
-
-        /**
-         * Convert touch position x:y to {@link Camera.Area} position -1000:-1000 to 1000:1000.
-         */
-        private Rect calculateTapArea(float x, float y, float coefficient) {
-            float focusAreaSize = 300;
-            int areaSize = Float.valueOf(focusAreaSize * coefficient).intValue();
-
-            int centerX = (int) (x / getResolution().width - 1000);
-            int centerY = (int) (y / getResolution().height - 1000);
-
-            int left = clamp(centerX - areaSize / 2, -1000, 1000);
-            int top = clamp(centerY - areaSize / 2, -1000, 1000);
-
-            RectF rectF = new RectF(left, top, left + areaSize, top + areaSize);
-
-            return new Rect(Math.round(rectF.left), Math.round(rectF.top), Math.round(rectF.right), Math.round(rectF.bottom));
-        }
-
-        private int clamp(int x, int min, int max) {
-            if (x > max) {
-                return max;
-            }
-            if (x < min) {
-                return min;
-            }
-            return x;
-        }
-
-        public void setFocusMode (Context item, int type){
-            Camera.Parameters params = mCamera.getParameters();
-            List<String> FocusModes = params.getSupportedFocusModes();
-
-            switch (type){
-                case 0:
-                    if (FocusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO))
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-                    else
-                        Toast.makeText(item, "Auto Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 1:
-                    if (FocusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO))
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
-                    else
-                        Toast.makeText(item, "Continuous Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 2:
-                    if (FocusModes.contains(Camera.Parameters.FOCUS_MODE_EDOF))
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_EDOF);
-                    else
-                        Toast.makeText(item, "EDOF Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 3:
-                    if (FocusModes.contains(Camera.Parameters.FOCUS_MODE_FIXED))
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
-                    else
-                        Toast.makeText(item, "Fixed Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 4:
-                    if (FocusModes.contains(Camera.Parameters.FOCUS_MODE_INFINITY))
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
-                    else
-                        Toast.makeText(item, "Infinity Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 5:
-                    if (FocusModes.contains(Camera.Parameters.FOCUS_MODE_MACRO))
-                        params.setFocusMode(Camera.Parameters.FOCUS_MODE_MACRO);
-                    else
-                        Toast.makeText(item, "Macro Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-            }
-
-            mCamera.setParameters(params);
-        }
-
-        public void setFlashMode (Context item, int type){
-            Camera.Parameters params = mCamera.getParameters();
-            List<String> FlashModes = params.getSupportedFlashModes();
-
-            switch (type){
-                case 0:
-                    if (FlashModes.contains(Camera.Parameters.FLASH_MODE_AUTO))
-                        params.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
-                    else
-                        Toast.makeText(item, "Auto Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 1:
-                    if (FlashModes.contains(Camera.Parameters.FLASH_MODE_OFF))
-                        params.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
-                    else
-                        Toast.makeText(item, "Off Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 2:
-                    if (FlashModes.contains(Camera.Parameters.FLASH_MODE_ON))
-                        params.setFlashMode(Camera.Parameters.FLASH_MODE_ON);
-                    else
-                        Toast.makeText(item, "On Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 3:
-                    if (FlashModes.contains(Camera.Parameters.FLASH_MODE_RED_EYE))
-                        params.setFlashMode(Camera.Parameters.FLASH_MODE_RED_EYE);
-                    else
-                        Toast.makeText(item, "Red Eye Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-                case 4:
-                    if (FlashModes.contains(Camera.Parameters.FLASH_MODE_TORCH))
-                        params.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
-                    else
-                        Toast.makeText(item, "Torch Mode not supported", Toast.LENGTH_SHORT).show();
-                    break;
-            }
-
-            mCamera.setParameters(params);
-        }
-
-        @Override
-        public void onAutoFocus(boolean arg0, Camera arg1) {
-
-        }
+        });
+    }
 
 }
