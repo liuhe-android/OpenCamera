@@ -2,28 +2,33 @@ package com.chronos.camera;
 
 import android.hardware.Camera;
 import android.os.Build;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+
+import com.chronos.utils.LogUtils;
 
 import java.io.IOException;
 
 /**
  * Created by Liuhe on 2017/3/2.
  */
-public class SurfaceViewManager implements SurfaceHolder.Callback{
+public class SurfaceViewManager extends TouchFocus implements SurfaceHolder.Callback, View.OnTouchListener {
 
     private Camera.Parameters mParameters;
     private SurfaceHolder holder;
     private SurfaceView surfaceView;
-    private Camera mCamera;
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        LogUtils.e("======surface=======");
         onBind();
     }
 
     public void onBind(){
         if (mCamera != null) {
+            LogUtils.e("onbind");
             mCamera.setDisplayOrientation(90);
             try {
                 mCamera.setPreviewDisplay(holder);
@@ -57,6 +62,8 @@ public class SurfaceViewManager implements SurfaceHolder.Callback{
         this.surfaceView = surfaceView;
         this.holder=surfaceView.getHolder();
         this.mCamera = camera;
+        surfaceView.setOnTouchListener(this);
+        holder.addCallback(this);
     }
 
     public SurfaceHolder getHolder() {
@@ -88,5 +95,12 @@ public class SurfaceViewManager implements SurfaceHolder.Callback{
                 }
             }
         });
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        //触摸对焦
+        focusOnTouch(event);
+        return true;
     }
 }
