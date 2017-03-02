@@ -78,7 +78,6 @@ public class SurfaceViewManager extends TouchFocus implements SurfaceHolder.Call
         //触摸对焦
         int width = App.getApplication().getScreenWidth();
         int height = App.getApplication().getScreenHeight();
-        mFocusManager.setPreviewSize(width, height);
         focusOnTouch(event);
         return true;
     }
