@@ -6,7 +6,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 
-import com.chronos.App;
 import com.chronos.utils.LogUtils;
 
 import java.io.IOException;
@@ -76,9 +75,9 @@ public class SurfaceViewManager extends TouchFocus implements SurfaceHolder.Call
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         //触摸对焦
-        int width = App.getApplication().getScreenWidth();
-        int height = App.getApplication().getScreenHeight();
-        focusOnTouch(event);
+        if (event.getPointerCount() == 1) {
+            focusOnTouch(event);
+        }
         return true;
     }
 }
